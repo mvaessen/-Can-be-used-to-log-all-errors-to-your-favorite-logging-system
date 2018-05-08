@@ -1,0 +1,22 @@
+{
+  "name": "mvaessen/binance-api",
+  "description": "Simple Binance API Wrapper, written in PHP. Includes the basics and assumes you know your way around.",
+  "keywords": ["Binance", "API"],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Max Vaessen",
+      "email": "maxvaessen@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mvaessen\\BinanceApi\\": "src/"
+    }
+  },
+  "minimum-stability": "stable"
+}
