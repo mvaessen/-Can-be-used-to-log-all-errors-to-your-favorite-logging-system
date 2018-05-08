@@ -29,3 +29,32 @@ $result = $api->queryPublic('<method>', '<endpoint>', '<request>');
 ```php
 $result = $api->queryPrivate('<method>', '<endpoint>', '<request>');
 ```
+
+
+##Custom error reporting
+You can extend the `processErrorCode` and `processException` methods to report the errors to your favorite bugreporting software.
+
+```
+<?php
+namespace App;
+
+use Mvaessen\BinanceApi\BinanceApiException;
+use Mvaessen\BinanceApi\Client;
+
+class BinanceApi extends Client
+{
+   protected function processErrorCode($response, $method, $url, $request)
+   {
+       //todo report to bugtracking software
+
+       throw new BinanceApiException($response['msg']);
+   }
+   
+   protected function processException($e, $method, $url, $request)
+   {
+       //todo report to bugtracking software
+
+       throw new BinanceApiException($e->getMessage());
+   }
+}
+```
