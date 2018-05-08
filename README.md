@@ -1,7 +1,7 @@
 # Binance API Wrapper PHP
 Simple Binance API Wrapper, written in PHP. Includes some basic methods to work with the API and assumes you know your way around. Check out the [Binance API Documentation](https://github.com/binance-exchange/binance-official-api-docs) for more information about the available endpoints. Will throw an exception when errors are encountered.
 
-###Please note:
+### Please note:
 - Does NOT include mechanism to intercept rate limit.
 - Comes without any support.
 - Use at your own risk.
@@ -31,7 +31,7 @@ $result = $api->queryPrivate('<method>', '<endpoint>', '<request>');
 ```
 
 
-##Custom error reporting
+## Custom error reporting
 You can extend the `processErrorCode` and `processException` methods to report the errors to your favorite bugreporting software.
 
 ```
