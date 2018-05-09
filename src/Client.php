@@ -74,11 +74,18 @@ class Client
         ));
     }
 
+    /**
+     * @return mixed
+     */
     public function account()
     {
         return $this->queryPrivate('get', 'account');
     }
 
+    /**
+     * @return array
+     * @throws BinanceApiException
+     */
     public function balance()
     {
         $result = $this->account();
@@ -99,6 +106,11 @@ class Client
         return $output;
     }
 
+    /**
+     * @param bool $symbol
+     *
+     * @return array
+     */
     public function price($symbol = false)
     {
         $request = [];
@@ -122,6 +134,9 @@ class Client
         return $output;
     }
 
+    /**
+     * @return array
+     */
     public function markets()
     {
         $result = $this->queryPublic('get', 'ticker/bookTicker');
@@ -140,6 +155,13 @@ class Client
         return $output;
     }
 
+    /**
+     * @param      $symbol
+     * @param      $quantity
+     * @param bool $test
+     *
+     * @return mixed
+     */
     public function buyMarket(
         $symbol,
         $quantity,
