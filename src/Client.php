@@ -1,4 +1,5 @@
 <?php
+
 namespace Mvaessen\BinanceApi;
 
 /**
@@ -69,7 +70,7 @@ class Client
             CURLOPT_USERAGENT      => 'Binance PHP API wrapper',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 20
+            CURLOPT_TIMEOUT        => 20
         ));
     }
 
@@ -82,24 +83,108 @@ class Client
     {
         $result = $this->account();
 
-        if(!isset($result['balances'])) {
+        if (! isset($result['balances'])) {
             throw new BinanceApiException('Missing balances data');
         }
 
         $output = [];
 
-        foreach($result['balances'] as $item) {
+        foreach ($result['balances'] as $item) {
             $output[$item['asset']] = [
-                'free' => $item['free'],
-                'locked' => $item['locked'],
-                'total' => $item['free'] + $item['locked']
+                'free'   => $item['free'],
+                'locked' => $item['locked']
             ];
         }
 
         return $output;
     }
 
+    public function price($symbol = false)
+    {
+        $request = [];
+
+        if ($symbol) {
+            $request['symbol'] = $symbol;
+        }
+
+        $result = $this->queryPublic('get', 'ticker/price', $request);
+
+        if (isset($result['symbol'])) {
+            return $result['price'];
+        }
+
+        $output = [];
+
+        foreach ($result as $item) {
+            $output[$item['symbol']] = $item['price'];
+        }
+
+        return $output;
+    }
+
+    public function markets()
+    {
+        $result = $this->queryPublic('get', 'ticker/bookTicker');
+
+        $output = [];
+
+        foreach ($result as $item) {
+            $output[$item['symbol']] = [
+                'bidPrice' => $item['bidPrice'],
+                'bidQty'   => $item['bidQty'],
+                'askPrice' => $item['askPrice'],
+                'askQty'   => $item['askQty'],
+            ];
+        }
+
+        return $output;
+    }
+
+    public function buyMarket(
+        $symbol,
+        $quantity,
+        $test = false
+    ) {
+        $url = 'order';
+
+        if ($test) {
+            $url .= '/test';
+        }
+
+        $request = [
+            'side'     => 'BUY',
+            'symbol'   => $symbol,
+            'type'     => 'MARKET',
+            'quantity' => $quantity
+        ];
+
+        return $this->queryPrivate('post', $url, $request);
+    }
+
+    public function sellMarket(
+        $symbol,
+        $quantity,
+        $test = false
+    ) {
+        $url = 'order';
+
+        if ($test) {
+            $url .= '/test';
+        }
+
+        $request = [
+            'side'     => 'SELL',
+            'symbol'   => $symbol,
+            'type'     => 'MARKET',
+            'quantity' => $quantity
+        ];
+
+        return $this->queryPrivate('post', $url, $request);
+    }
+
     /**
+     * queryPublic should be used for all public calls, which do not require the AUTH header
+     *
      * @param       $method
      * @param       $url
      * @param array $request
@@ -118,12 +203,14 @@ class Client
                 $request,
                 false
             );
-        } catch(BinanceApiException $e) {
+        } catch (BinanceApiException $e) {
             return $this->processException($e, $method, $url, $request);
         }
     }
 
     /**
+     * queryPrivate should be used for all calls that require the AUTH header to be present
+     *
      * @param       $method
      * @param       $url
      * @param array $request
@@ -142,88 +229,9 @@ class Client
                 $request,
                 true
             );
-        } catch(BinanceApiException $e) {
+        } catch (BinanceApiException $e) {
             return $this->processException($e, $method, $url, $request);
         }
-    }
-
-    /**
-     * @param       $method
-     * @param       $url
-     * @param array $request
-     * @param bool  $signed to enable the auth headers for the request
-     *
-     * @return mixed
-     * @throws BinanceApiException
-     */
-    private function request(
-        $method,
-        $url,
-        array $request = array(),
-        $signed = false
-    ) {
-        $query = http_build_query($request, '', '&');
-
-        //set auth header
-        if($signed) {
-            $timestamp = microtime(true) * 1000;
-            $query .= '&timestamp=' . number_format($timestamp, 0, '.', '');
-
-            $signature = hash_hmac('sha256', $query, $this->secret);
-            $query .= '&signature=' . $signature;
-
-            curl_setopt($this->curl, CURLOPT_HTTPHEADER, array(
-                'X-MBX-APIKEY: ' . $this->key,
-            ));
-        }
-
-        //determin & set request path
-        $path = $this->url . '/' . $this->version . '/' . $url;
-
-        if(count($query)) {
-            $path .= '?' . $query;
-        }
-
-        curl_setopt($this->curl, CURLOPT_URL, $path);
-
-        //set method
-        switch($method) {
-            case 'POST':
-            case 'post':
-                curl_setopt($this->curl, CURLOPT_POST, true);
-                break;
-
-            case 'DELETE':
-            case 'delete':
-                curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
-                break;
-
-            case 'GET':
-            case 'get':
-                break;
-
-            default:
-                throw new BinanceApiException('Unsupported method');
-
-        }
-
-        //execute request
-        $result = curl_exec($this->curl);
-        if ($result === false) {
-            throw new BinanceApiException('CURL error: ' . curl_error($this->curl));
-        }
-
-        // decode results
-        $output = json_decode($result, true);
-        if (! is_array($output)) {
-            throw new BinanceApiException('JSON decode error');
-        }
-
-        if(isset($output['code'])) {
-            return $this->processErrorCode($output, $method, $url, $request);
-        }
-
-        return $output;
     }
 
     /**
@@ -254,5 +262,90 @@ class Client
     protected function processException($e, $method, $url, $request)
     {
         throw new BinanceApiException($e->getMessage());
+    }
+
+    /**
+     * @param       $method
+     * @param       $url
+     * @param array $request
+     * @param bool  $signed to enable the auth headers for the request
+     *
+     * @return mixed
+     * @throws BinanceApiException
+     */
+    private function request(
+        $method,
+        $url,
+        array $request = array(),
+        $signed = false
+    ) {
+        $query = http_build_query($request, '', '&');
+
+        //determin & set request path
+        $path = $this->url . '/' . $this->version . '/' . $url;
+
+        //set auth header
+        if ($signed) {
+            $timestamp = microtime(true) * 1000;
+            $query .= '&timestamp=' . number_format($timestamp, 0, '.', '');
+
+            $signature = hash_hmac('sha256', $query, $this->secret);
+            $query .= '&signature=' . $signature;
+
+            curl_setopt($this->curl, CURLOPT_HTTPHEADER, array(
+                'X-MBX-APIKEY: ' . $this->key,
+            ));
+        }
+
+        if (count($query)) {
+            $path .= '?' . $query;
+        }
+
+        curl_setopt($this->curl, CURLOPT_URL, $path);
+
+        //set method
+        switch ($method) {
+            case 'POST':
+            case 'post':
+                curl_setopt($this->curl, CURLOPT_POSTFIELDS, $request);
+                curl_setopt($this->curl, CURLOPT_POST, true);
+                break;
+
+            case 'DELETE':
+            case 'delete':
+                curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                break;
+
+            case 'GET':
+            case 'get':
+                break;
+
+            default:
+                throw new BinanceApiException('Unsupported method');
+        }
+
+        //execute request
+        $result = curl_exec($this->curl);
+        if ($result === false) {
+            throw new BinanceApiException('CURL error: ' . curl_error($this->curl));
+        }
+
+        $httpcode = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+
+        if ($httpcode != 200) {
+            throw new BinanceApiException('API HTTP response: ' . $httpcode . ' - ' . $result);
+        }
+
+        // decode results
+        $output = json_decode($result, true);
+        if (! is_array($output)) {
+            throw new BinanceApiException('JSON decode error');
+        }
+
+        if (isset($output['code'])) {
+            return $this->processErrorCode($output, $method, $url, $request);
+        }
+
+        return $output;
     }
 }

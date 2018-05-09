@@ -32,7 +32,7 @@ $result = $api->queryPrivate('<method>', '<endpoint>', '<request>');
 
 
 ## Custom error reporting
-You can extend the `processErrorCode` and `processException` methods to report the errors to your favorite bugreporting software.
+You can choose to overwrite the `processErrorCode` and `processException` methods to report the errors to your favorite bugreporting software.
 
 ```
 <?php
