@@ -348,14 +348,14 @@ class Client
 
         //execute request
         $result = curl_exec($this->curl);
-        if ($result === false) {
-            throw new BinanceApiException('CURL error: ' . curl_error($this->curl));
-        }
-
         $httpcode = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
 
+        if ($result === false) {
+            throw new BinanceApiException('CURL error: ' . curl_error($this->curl), $httpcode);
+        }
+
         if ($httpcode != 200) {
-            throw new BinanceApiException('API HTTP response: ' . $httpcode . ' - ' . $result);
+            throw new BinanceApiException($result, $httpcode);
         }
 
         // decode results
