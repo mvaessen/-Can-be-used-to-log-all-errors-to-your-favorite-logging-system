@@ -42,6 +42,8 @@ class Client
     protected $version;
     protected $curl;
 
+    public $recvWindow = 5000;
+
     /**
      * BinanceApi constructor.
      *
@@ -245,6 +247,10 @@ class Client
         array $request = array()
     ) {
         try {
+            if(!isset($request['recvWindow'])) {
+                $request['recvWindow'] = $this->recvWindow;
+            }
+
             return $this->request(
                 $method,
                 $url,
