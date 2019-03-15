@@ -325,7 +325,7 @@ class Client
             ));
         }
 
-        if (count($query)) {
+        if ($query) {
             $path .= '?' . $query;
         }
 
